@@ -1,0 +1,34 @@
+.shopify_player{
+  position: relative;
+  width: fit-content;
+  height: fit-content;
+}
+.controls{
+  transition: opacity .4s ease-in-out, transform .4s ease-in-out;
+  position: absolute;
+  bottom: 2.5%;
+  left: 0;
+  height: 44px;
+  width: 472px;
+  margin-left: 2.5%;
+  padding-top: 13px;
+  padding-bottom: 13px;
+  width: 95%;
+  display: flex;
+  background-color: rgba(255, 255, 255, 0.95);
+  z-index: 2;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.controls button .icon--not-pressed{
+  display: block;
+}
+.controls button.pressed .icon--not-pressed{
+  display: none;
+}
+.controls button .icon--pressed{
+  display: none;
+}
+.controls button.pressed .icon--pressed{
+  display: block;
+}
