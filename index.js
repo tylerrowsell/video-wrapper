@@ -9,9 +9,140 @@ document.addEventListener("DOMContentLoaded", function(event) {
     mediaElement = MediaPlayer.for(potentialMediaElement);
     if(mediaElement){
       media[mediaElement.id] = mediaElement;
+      wrapMediaPlayer(mediaElement);
+      addMediaPlayerControls(mediaElement);
+      addMediaControlHandlers(mediaElement);
     }
   }
 });
+
+function wrapMediaPlayer(mediaPlayer) {
+  var wrapper = document.createElement('div');
+  wrapper.setAttribute('data-media-id', mediaPlayer.id);
+  wrapper.classList.add('media_player');
+
+  var element = mediaPlayer.element;
+  element.parentNode.insertBefore(wrapper, element);
+  wrapper.appendChild(element);
+  mediaPlayer.container = wrapper;
+};
+
+function addMediaPlayerControls(mediaPlayer) {
+  var doc = new DOMParser().parseFromString(defaultControls.join(''), "text/html");
+  mediaPlayer.container.appendChild(doc.body.firstChild);
+};
+
+var defaultControls = [
+  '<div class="controls">',
+  '<button type="button" class="play-pause" data-media-player="play" aria-label="Play, {title}">',
+    '<span class="icon--pressed" focusable="false"><img src="icon-pause.svg"/></span>',
+    '<span class="icon--not-pressed" focusable="false"><img src="icon-play.svg"/></span>',
+  '</button>',
+  '<div class="seek-wrapper">',
+    '<input data-media-player="seek" type="range" min="0" max="100" step="0.01" value="0" autocomplete="off" role="slider" aria-label="Seek" style="--value:0%;">',
+  '</div>',
+  '<button type="button" class="mute" data-media-player="mute">',
+    '<span class="icon--pressed" focusable="false"><img src="icon-mute.svg"/></span>',
+    '<span class="icon--not-pressed" focusable="false"><img src="icon-unmute.svg"/></span>',
+  '</button>',
+  '<div class="volume-wrapper">',
+    '<input data-media-player="volume" type="range" min="0" max="1" step="0.05" value="1" autocomplete="off" role="slider" aria-label="Volume" style="--value:100%;">',
+  '</div>',
+  '</div>']
+
+  function addMediaControlHandlers(mediaPlayer){
+    var controls = mediaPlayer.container.getElementsByClassName("controls")[0];
+
+    mediaPlayer.container.addEventListener('mouseover', function(event){
+      event.currentTarget.classList.add('controls-visible');
+    });
+
+    mediaPlayer.container.addEventListener('mouseout', function(event){
+      event.currentTarget.classList.remove('controls-visible');
+    });
+
+    mediaPlayer.element.addEventListener('playbackChange', function(){
+      if(mediaPlayer.paused){
+        controls.getElementsByClassName("play-pause")[0].classList.remove('pressed');
+      }else{
+        controls.getElementsByClassName("play-pause")[0].classList.add('pressed');
+      }
+    });
+
+    mediaPlayer.element.addEventListener('muteChange', function(){
+      if(mediaPlayer.muted){
+        controls.getElementsByClassName("mute")[0].classList.add('pressed');
+      }else{
+        controls.getElementsByClassName("mute")[0].classList.remove('pressed');
+      }
+    });
+
+    controls.getElementsByClassName("volume-wrapper")[0].addEventListener('mouseover', function(event){
+      handleVolumeHover(event, controls, mediaPlayer)
+    });
+    controls.getElementsByClassName("volume-wrapper")[0].addEventListener('mouseleave', function(event){
+      handleVolumeHover(event, controls, mediaPlayer)
+    });
+    controls.getElementsByClassName("mute")[0].addEventListener('mouseover', function(event){
+      handleVolumeHover(event, controls, mediaPlayer)
+    });
+    controls.getElementsByClassName("mute")[0].addEventListener('mouseleave', function(event){
+      handleVolumeHover(event, controls, mediaPlayer)
+    });
+    
+    controls.querySelectorAll('[data-media-player=play]')[0].addEventListener('click', function(event){
+      mediaPlayer.togglePlayback();
+    });
+
+    controls.querySelectorAll('[data-media-player=mute]')[0].addEventListener('click', function(event){
+      mediaPlayer.toggleMute();
+    });
+
+    var seekRange = controls.querySelectorAll('[data-media-player=seek]')[0];
+    addSeekHandlers(mediaPlayer, seekRange);
+
+    var volumeRange = controls.querySelectorAll('[data-media-player=volume]')[0];
+    addVolumeHandlers(mediaPlayer, volumeRange);
+  };
+
+  function handleVolumeHover(event, controls, mediaPlayer){
+    if(event.type === 'mouseover'){
+      clearInterval(mediaPlayer.timers.volumeVisible);
+      controls.getElementsByClassName("volume-wrapper")[0].classList.add('volume-visible');
+    }else{
+      mediaPlayer.timers.volumeVisible = setInterval(function(){
+        controls.getElementsByClassName("volume-wrapper")[0].classList.remove('volume-visible');
+      }, 100);
+    }
+  }
+
+  function addSeekHandlers(mediaPlayer, seekRange){
+    mediaPlayer.element.addEventListener('timeUpdate', function(){
+      var value = (100.0 / mediaPlayer.duration) * mediaPlayer.currentTime;
+      seekRange.value = value
+      seekRange.style.setProperty('--value', value + '%');
+    });
+
+    seekRange.addEventListener('input', function(event){
+      var seekedPercent = event.currentTarget.value / 100.0 
+      var currentTime = seekedPercent * mediaPlayer.duration;
+      mediaPlayer.currentTime = currentTime;
+    });
+  };
+
+  function addVolumeHandlers(mediaPlayer, volumeRange){
+
+    mediaPlayer.element.addEventListener('volumeChange', function(){
+      var value = mediaPlayer.volume;
+      volumeRange.value = value;
+      volumeRange.style.setProperty('--value', (value * 100) + '%');
+    });
+
+    volumeRange.addEventListener('input', function(event){
+      var volumePercent = event.currentTarget.value
+      mediaPlayer.volume = volumePercent;
+    });
+  };
 
 /* MediaPlayer.js */
 class MediaPlayer {
@@ -37,16 +168,15 @@ class MediaPlayer {
       mediaElement.id = generatedId;
       this.id = generatedId;
     }
-    this.player = mediaElement;
+    this.element = mediaElement;
     this.host = hostByMediaElement(mediaElement);
     this.paused = true;
     this.currentTime = 0;
     this.duration = 0;
     this.muted = false;
     this.volume = 1;
-    this.controls = {
-      visible: false
-    }
+    this.mutedVolume = 1;
+    this.timers = {};
     this.setup();
   }
 
@@ -64,24 +194,26 @@ class MediaPlayer {
 
   setup(){
     this.status = 'loading';
-    this.setupTimeUpdateEvent();
   };
 
   ready(){
     this.status = 'ready';
   };
 
-  setupTimeUpdateEvent(){
-    var mediaPlayer = this;
-    mediaPlayer.player.addEventListener(eventNames.playbackChange, function(){
-      if(mediaPlayer.paused){
-        clearInterval(mediaPlayer.progressTimeout);
-      }else{
-        mediaPlayer.progressTimeout = setInterval(function(){ 
-          mediaPlayer.player.dispatchEvent(events.timeUpdate);
-        }, 500);
-      }
-    });
+  togglePlayback(){
+    if(this.paused){
+      this.play();
+    }else{
+      this.pause();
+    }
+  };
+
+  toggleMute(){
+    if(this.muted){
+      this.muted = false;
+    }else{
+      this.muted = true;
+    }
   };
 };
   
@@ -95,7 +227,6 @@ var eventNames ={
   playbackChange: 'playbackChange',
   volumeChange: 'volumeChange',
   muteChange: 'muteChange',
-  seeked: 'seeked',
   timeUpdate: 'timeUpdate'
 };
 
@@ -103,7 +234,6 @@ var events = {
   playbackChange: new Event(eventNames.playbackChange),
   volumeChange: new Event(eventNames.volumeChange),
   muteChange: new Event(eventNames.muteChange),
-  seeked: new Event(eventNames.seeked),
   timeUpdate: new Event(eventNames.timeUpdate)
 };
 
@@ -147,9 +277,10 @@ class YoutubePlayer extends MediaPlayer {
     }
     super.setup();
   };
+
   ready(){
     var mediaPlayer = this;
-    mediaPlayer.embed = new window.YT.Player(mediaPlayer.id, {
+    mediaPlayer.player = new window.YT.Player(mediaPlayer.id, {
       events: {
         onStateChange: function onStateChange(event){
           mediaPlayer.syncState(event.data);
@@ -158,24 +289,20 @@ class YoutubePlayer extends MediaPlayer {
           var instance = event.target;
           mediaPlayer.play = function () {
             instance.playVideo();
-            mediaPlayer.player.dispatchEvent(events.playbackChange);
           };
 
           mediaPlayer.pause = function () {
             instance.pauseVideo();
-            mediaPlayer.player.dispatchEvent(events.playbackChange);
           };
 
           mediaPlayer.duration = instance.getDuration();
 
-          mediaPlayer.currentTime = 0;
           Object.defineProperty(mediaPlayer, 'currentTime', {
             get() {
               return Number(instance.getCurrentTime());
             },
             set(time) {
               instance.seekTo(time);
-              mediaPlayer.player.dispatchEvent(events.seeked);
             }
           });
 
@@ -187,7 +314,13 @@ class YoutubePlayer extends MediaPlayer {
             set(input) {
               volume = input;
               instance.setVolume(volume * 100);
-              mediaPlayer.player.dispatchEvent(events.volumeChange);
+              if(volume > 0){
+                mediaPlayer.mutedVolume = volume;
+                mediaPlayer.muted = false;
+              }else{
+                mediaPlayer.muted = true;
+              }
+              mediaPlayer.element.dispatchEvent(events.volumeChange);
             }
           });
 
@@ -198,34 +331,38 @@ class YoutubePlayer extends MediaPlayer {
             },
             set(input) {
               var toggle = Utils.isBoolean(input) ? input : muted;
+              if(muted === toggle){
+                return;
+              }
               muted = toggle;
               instance[muted ? 'mute' : 'unMute']();
-              mediaPlayer.player.dispatchEvent(events.muteChange);
+              mediaPlayer.volume = muted ? 0 : mediaPlayer.mutedVolume;
+              mediaPlayer.element.dispatchEvent(events.muteChange);
             }
           });
-
-          instance.setSize(800, 450);
         }
       }
     });
     super.ready();
   }
   syncState(state){
+    var mediaPlayer = this;
     if(!state){
-      state = this.embed.getPlayerState();
+      state = this.player.getPlayerState();
     }
     switch(state){
-      case YT.PlayerState.ENDED:
+      case YT.PlayerState.PAUSED || YT.PlayerState.ENDED:
         this.paused = true;
+        clearInterval(mediaPlayer.timers.progress);
         break;
       case YT.PlayerState.PLAYING:
         this.paused = false;
-        break;
-      case YT.PlayerState.PAUSED:
-        this.paused = true;
+        mediaPlayer.timers.progress = setInterval(function(){ 
+          mediaPlayer.element.dispatchEvent(events.timeUpdate);
+        }, 500);
         break;
     }
-    this.player.dispatchEvent(events.playbackChange);
+    this.element.dispatchEvent(events.playbackChange);
   }
 };
 
@@ -263,29 +400,28 @@ class VimeoPlayer extends MediaPlayer{
   ready() {
   
     var mediaPlayer = this;
-    mediaPlayer.embed = new window.Vimeo.Player(this.player)
-    var vimeoPlayer = mediaPlayer.embed;
+    mediaPlayer.player = new window.Vimeo.Player(this.element)
+    var vimeoPlayer = mediaPlayer.player;
 
     mediaPlayer.play = function () {
-      mediaPlayer.embed.play();
-      mediaPlayer.player.dispatchEvent(events.playbackChange);
+      mediaPlayer.player.play();
     };
 
     mediaPlayer.pause = function () {
-      mediaPlayer.embed.pause();
-      mediaPlayer.player.dispatchEvent(events.playbackChange);
+      mediaPlayer.player.pause();
     };
 
-    mediaPlayer.duration = vimeoPlayer.getDuration();
+    vimeoPlayer.getDuration().then(function(duration) {
+      mediaPlayer.duration = duration;
+    });
 
-    mediaPlayer.currentTime = 0;
+    var currentTime = mediaPlayer.currentTime;
     Object.defineProperty(mediaPlayer, 'currentTime', {
       get() {
-        return Number(vimeoPlayer.getCurrentTime());
+        return currentTime;
       },
       set(time) {
         vimeoPlayer.setCurrentTime(time);
-        mediaPlayer.player.dispatchEvent(events.seeked);
       }
     });
 
@@ -297,7 +433,13 @@ class VimeoPlayer extends MediaPlayer{
       set(input) {
         volume = input;
         vimeoPlayer.setVolume(volume);
-        mediaPlayer.player.dispatchEvent(events.volumeChange);
+        if(volume > 0){
+          mediaPlayer.mutedVolume = volume;
+          mediaPlayer.muted = false;
+        }else{
+          mediaPlayer.muted = true;
+        }
+        mediaPlayer.element.dispatchEvent(events.volumeChange);
       }
     });
 
@@ -308,25 +450,28 @@ class VimeoPlayer extends MediaPlayer{
       },
       set(input) {
         var toggle = Utils.isBoolean(input) ? input : muted;
-        muted = toggle;
-        if(muted && mediaPlayer.volume > 0){
-          mediaPlayer.mutedVolume = mediaPlayer.volume;
-          mediaPlayer.volume = 0;
-        }else{
-          mediaPlayer.volume = mediaPlayer.mutedVolume;
+        if(muted === toggle){
+          return;
         }
-        mediaPlayer.player.dispatchEvent(events.muteChange);
+        muted = toggle;
+        mediaPlayer.volume = muted ? 0 : mediaPlayer.mutedVolume;
+        mediaPlayer.element.dispatchEvent(events.muteChange);
       }
+    });
+
+    vimeoPlayer.on('timeupdate', function (data) {
+      currentTime = data.seconds;
+      mediaPlayer.element.dispatchEvent(events.timeUpdate);
     });
 
     vimeoPlayer.on('play', function(){
       mediaPlayer.paused = false;
-      mediaPlayer.player.dispatchEvent(events.playbackChange);
+      mediaPlayer.element.dispatchEvent(events.playbackChange);
     });
 
     vimeoPlayer.on('pause', function(){
       mediaPlayer.paused = true;
-      mediaPlayer.player.dispatchEvent(events.playbackChange);
+      mediaPlayer.element.dispatchEvent(events.playbackChange);
     });
     super.ready();
   }
@@ -336,26 +481,29 @@ class VimeoPlayer extends MediaPlayer{
 class Html5Player extends MediaPlayer{
   setup() {
     var mediaPlayer = this;
+    mediaPlayer.player = mediaPlayer.element;
+    super.setup();
+    mediaPlayer.player.addEventListener('canplay', function(){ mediaPlayer.ready() });
+  }
+
+  ready() {
+    var mediaPlayer = this;
     mediaPlayer.play = function () {
       mediaPlayer.player.play();
-      mediaPlayer.player.dispatchEvent(events.playbackChange);
     };
 
     mediaPlayer.pause = function () {
       mediaPlayer.player.pause();
-      mediaPlayer.player.dispatchEvent(events.playbackChange);
     };
 
     mediaPlayer.duration = mediaPlayer.player.duration;
 
-    mediaPlayer.currentTime = 0;
     Object.defineProperty(mediaPlayer, 'currentTime', {
       get() {
         return Number(mediaPlayer.player.currentTime);
       },
       set(time) {
         mediaPlayer.player.currentTime = time;
-        mediaPlayer.player.dispatchEvent(events.seeked);
       }
     });
 
@@ -367,7 +515,13 @@ class Html5Player extends MediaPlayer{
       set(input) {
         volume = input;
         mediaPlayer.player.volume = volume;
-        mediaPlayer.player.dispatchEvent(events.volumeChange);
+        if(volume > 0){
+          mediaPlayer.mutedVolume = volume;
+          mediaPlayer.muted = false;
+        }else{
+          mediaPlayer.muted = true;
+        }
+        mediaPlayer.element.dispatchEvent(events.volumeChange);
       }
     });
 
@@ -378,23 +532,30 @@ class Html5Player extends MediaPlayer{
       },
       set(input) {
         var toggle = Utils.isBoolean(input) ? input : muted;
+        if(muted === toggle){
+          return;
+        }
         muted = toggle;
         mediaPlayer.player.muted = muted;
-        mediaPlayer.player.dispatchEvent(events.muteChange);
+        mediaPlayer.volume = muted ? 0 : mediaPlayer.mutedVolume;
+          
+        mediaPlayer.element.dispatchEvent(events.muteChange);
       }
+    });
+
+    mediaPlayer.player.addEventListener('timeupdate', function(){
+      mediaPlayer.element.dispatchEvent(events.timeUpdate);
     });
 
     mediaPlayer.player.addEventListener('play', function(){
       mediaPlayer.paused = false;
-      mediaPlayer.player.dispatchEvent(events.playbackChange);
+      mediaPlayer.element.dispatchEvent(events.playbackChange);
     });
 
     mediaPlayer.player.addEventListener('pause', function(){
       mediaPlayer.paused = true;
-      mediaPlayer.player.dispatchEvent(events.playbackChange);
+      mediaPlayer.element.dispatchEvent(events.playbackChange);
     });
-
-    super.setup();
     super.ready();
   };
 

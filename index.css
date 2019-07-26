@@ -1,15 +1,28 @@
 .media_player{
   position: relative;
-  width: fit-content;
-  height: fit-content;
+  width: 617px;
+  height: 360px;
+  margin: 10px;
+  display: inline-block;
 }
-.controls{
-  transition: opacity .4s ease-in-out, transform .4s ease-in-out;
+video, iframe{
+  width: 617px;
+  height: 360px;
+}
+
+.media_player.controls-visible .controls{
+  opacity: 1;
+  visibility: visible;
+}
+
+.media_player .controls{
+  opacity: 0;
+  visibility: hidden;
+  transition: visibility 300ms linear, opacity 300ms ease-in-out;
   position: absolute;
   bottom: 2.5%;
   left: 0;
-  height: 44px;
-  width: 472px;
+  height: 20px;
   margin-left: 2.5%;
   padding-top: 13px;
   padding-bottom: 13px;
@@ -20,15 +33,132 @@
   border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.controls button .icon--not-pressed{
+.media_player .controls button{
+  background-color: transparent;
+  outline: none;
+  border: 0;
+  padding: 0;
+  height: 20px;
+  width: 20px;
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+.media_player .controls .play-pause img{
+  width: 13px;
+  height: 17.6px;
+}
+
+.media_player .controls .mute img{
+  width: 20px;
+  height: 20px;
+}
+
+.media_player .controls button .icon--not-pressed{
   display: block;
 }
-.controls button.pressed .icon--not-pressed{
+.media_player .controls button.pressed .icon--not-pressed{
   display: none;
 }
-.controls button .icon--pressed{
+.media_player .controls button .icon--pressed{
   display: none;
 }
-.controls button.pressed .icon--pressed{
+.media_player .controls button.pressed .icon--pressed{
   display: block;
+}
+
+.media_player .controls .seek-wrapper {
+  flex-grow: 1;
+  height: 16px;
+}
+
+input[type=range]:focus {
+  outline: none;
+}
+
+.media_player .controls .seek-wrapper input{
+  width: 100%;
+}
+
+.media_player .controls .volume-wrapper.volume-visible{
+  opacity: 1;
+  visibility: visible;
+}
+
+.media_player .controls .volume-wrapper {
+  transition: visibility 300ms linear, opacity 300ms ease-in-out;
+  opacity: 0;
+  visibility: hidden;
+  position: absolute;
+  background: rgba(60, 60, 60, 0.95);
+  width: 120px;
+  height: 20px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  padding-left: 10px;
+  padding-right: 10px;
+  z-index: 2;
+  bottom: 110px;
+  right: -50px;
+  transform: rotate(-90deg);
+  display: flex;
+}
+
+
+.media_player .controls input[type=range] {
+  -webkit-appearance: none;
+  background: 0 0;
+  border: 0;
+  border-radius: 26px;
+  display: block;
+  height: 19px;
+  margin: 0;
+  padding: 0;
+  transition: box-shadow .3s ease;
+  width: 100%
+}
+
+.media_player .controls input[type=range]::-webkit-slider-runnable-track {
+  background: 0 0;
+  border: 0;
+  border-radius: 2.5px;
+  height: 2px;
+  transition: box-shadow .3s ease;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.media_player .controls .volume-wrapper input[type=range] {
+  color: rgb(255, 255, 255);
+}
+
+.media_player .controls .seek-wrapper input[type=range] {
+  color: rgb(160, 160, 160);
+}
+
+.media_player .controls .volume-wrapper input[type=range]::-webkit-slider-runnable-track {
+  background-image: linear-gradient(to right, rgb(255, 255, 255) var(--value, 0), rgb(160, 160, 160) var(--value, 0))
+}
+
+.media_player .controls .seek-wrapper input[type=range]::-webkit-slider-runnable-track {
+  background-image: linear-gradient(to right, rgb(58, 58, 58) var(--value, 0), rgb(160, 160, 160) var(--value, 0))
+}
+
+.media_player .controls input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: rgba(255, 255, 255, 1.0);
+  border: 2px solid rgba(0, 0, 0, 1.0);
+  border-radius: 50%;
+  cursor: -moz-grab;
+  cursor: -webkit-grab;
+}
+
+.media_player .controls .seek-wrapper input[type=range]::-webkit-slider-thumb {
+  margin-top: -6px;
+}
+
+.media_player .controls .volume-wrapper input[type=range]::-webkit-slider-thumb {
+  margin-top: -7px;
 }

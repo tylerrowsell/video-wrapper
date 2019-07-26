@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="13px" height="16px" viewBox="0 0 13 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 54.1 (76490) - https://sketchapp.com -->
+    <title>Group 2</title>
+    <desc>Created with Sketch.</desc>
+    <g id="Symbols" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Video-Player-Controls----Play" transform="translate(-16.000000, -14.000000)">
+            <g id="Group-5">
+                <g id="Group-2">
+                    <rect id="Bounds" fill-opacity="0" fill="#FFFFFF" x="0" y="0" width="44" height="44"></rect>
+                    <path d="M18,14 C19.1045695,14 20,14.8954305 20,16 L20,28 C20,29.1045695 19.1045695,30 18,30 C16.8954305,30 16,29.1045695 16,28 L16,16 C16,14.8954305 16.8954305,14 18,14 Z M27,14 C28.1045695,14 29,14.8954305 29,16 L29,28 C29,29.1045695 28.1045695,30 27,30 C25.8954305,30 25,29.1045695 25,28 L25,16 C25,14.8954305 25.8954305,14 27,14 Z" id="Combined-Shape" fill="#3A3A3A"></path>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
