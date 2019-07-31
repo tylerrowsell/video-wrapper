@@ -1,148 +1,17 @@
 /* Index.js */
 
-media = {};
+var media = {};
 
 document.addEventListener("DOMContentLoaded", function(event) {
   var potentialMediaElements = document.querySelectorAll('iframe,video');
   for(var i = 0; i < potentialMediaElements.length; i++){
-    potentialMediaElement = potentialMediaElements[i];
-    mediaElement = MediaPlayer.for(potentialMediaElement);
+    var potentialMediaElement = potentialMediaElements[i];
+    var mediaElement = MediaPlayer.for(potentialMediaElement);
     if(mediaElement){
       media[mediaElement.id] = mediaElement;
-      wrapMediaPlayer(mediaElement);
-      addMediaPlayerControls(mediaElement);
-      addMediaControlHandlers(mediaElement);
     }
   }
 });
-
-function wrapMediaPlayer(mediaPlayer) {
-  var wrapper = document.createElement('div');
-  wrapper.setAttribute('data-media-id', mediaPlayer.id);
-  wrapper.classList.add('media_player');
-
-  var element = mediaPlayer.element;
-  element.parentNode.insertBefore(wrapper, element);
-  wrapper.appendChild(element);
-  mediaPlayer.container = wrapper;
-};
-
-function addMediaPlayerControls(mediaPlayer) {
-  var doc = new DOMParser().parseFromString(defaultControls.join(''), "text/html");
-  mediaPlayer.container.appendChild(doc.body.firstChild);
-};
-
-var defaultControls = [
-  '<div class="controls">',
-  '<button type="button" class="play-pause" data-media-player="play" aria-label="Play, {title}">',
-    '<span class="icon--pressed" focusable="false"><img src="icon-pause.svg"/></span>',
-    '<span class="icon--not-pressed" focusable="false"><img src="icon-play.svg"/></span>',
-  '</button>',
-  '<div class="seek-wrapper">',
-    '<input data-media-player="seek" type="range" min="0" max="100" step="0.01" value="0" autocomplete="off" role="slider" aria-label="Seek" style="--value:0%;">',
-  '</div>',
-  '<button type="button" class="mute" data-media-player="mute">',
-    '<span class="icon--pressed" focusable="false"><img src="icon-mute.svg"/></span>',
-    '<span class="icon--not-pressed" focusable="false"><img src="icon-unmute.svg"/></span>',
-  '</button>',
-  '<div class="volume-wrapper">',
-    '<input data-media-player="volume" type="range" min="0" max="1" step="0.05" value="1" autocomplete="off" role="slider" aria-label="Volume" style="--value:100%;">',
-  '</div>',
-  '</div>']
-
-  function addMediaControlHandlers(mediaPlayer){
-    var controls = mediaPlayer.container.getElementsByClassName("controls")[0];
-
-    mediaPlayer.container.addEventListener('mouseover', function(event){
-      event.currentTarget.classList.add('controls-visible');
-    });
-
-    mediaPlayer.container.addEventListener('mouseout', function(event){
-      event.currentTarget.classList.remove('controls-visible');
-    });
-
-    mediaPlayer.element.addEventListener('playbackChange', function(){
-      if(mediaPlayer.paused){
-        controls.getElementsByClassName("play-pause")[0].classList.remove('pressed');
-      }else{
-        controls.getElementsByClassName("play-pause")[0].classList.add('pressed');
-      }
-    });
-
-    mediaPlayer.element.addEventListener('muteChange', function(){
-      if(mediaPlayer.muted){
-        controls.getElementsByClassName("mute")[0].classList.add('pressed');
-      }else{
-        controls.getElementsByClassName("mute")[0].classList.remove('pressed');
-      }
-    });
-
-    controls.getElementsByClassName("volume-wrapper")[0].addEventListener('mouseover', function(event){
-      handleVolumeHover(event, controls, mediaPlayer)
-    });
-    controls.getElementsByClassName("volume-wrapper")[0].addEventListener('mouseleave', function(event){
-      handleVolumeHover(event, controls, mediaPlayer)
-    });
-    controls.getElementsByClassName("mute")[0].addEventListener('mouseover', function(event){
-      handleVolumeHover(event, controls, mediaPlayer)
-    });
-    controls.getElementsByClassName("mute")[0].addEventListener('mouseleave', function(event){
-      handleVolumeHover(event, controls, mediaPlayer)
-    });
-    
-    controls.querySelectorAll('[data-media-player=play]')[0].addEventListener('click', function(event){
-      mediaPlayer.togglePlayback();
-    });
-
-    controls.querySelectorAll('[data-media-player=mute]')[0].addEventListener('click', function(event){
-      mediaPlayer.toggleMute();
-    });
-
-    var seekRange = controls.querySelectorAll('[data-media-player=seek]')[0];
-    addSeekHandlers(mediaPlayer, seekRange);
-
-    var volumeRange = controls.querySelectorAll('[data-media-player=volume]')[0];
-    addVolumeHandlers(mediaPlayer, volumeRange);
-  };
-
-  function handleVolumeHover(event, controls, mediaPlayer){
-    if(event.type === 'mouseover'){
-      clearInterval(mediaPlayer.timers.volumeVisible);
-      controls.getElementsByClassName("volume-wrapper")[0].classList.add('volume-visible');
-    }else{
-      mediaPlayer.timers.volumeVisible = setInterval(function(){
-        controls.getElementsByClassName("volume-wrapper")[0].classList.remove('volume-visible');
-      }, 100);
-    }
-  }
-
-  function addSeekHandlers(mediaPlayer, seekRange){
-    mediaPlayer.element.addEventListener('timeUpdate', function(){
-      var value = (100.0 / mediaPlayer.duration) * mediaPlayer.currentTime;
-      seekRange.value = value
-      seekRange.style.setProperty('--value', value + '%');
-    });
-
-    seekRange.addEventListener('input', function(event){
-      var seekedPercent = event.currentTarget.value / 100.0 
-      var currentTime = seekedPercent * mediaPlayer.duration;
-      mediaPlayer.currentTime = currentTime;
-    });
-  };
-
-  function addVolumeHandlers(mediaPlayer, volumeRange){
-
-    mediaPlayer.element.addEventListener('volumeChange', function(){
-      var value = mediaPlayer.volume;
-      volumeRange.value = value;
-      volumeRange.style.setProperty('--value', (value * 100) + '%');
-    });
-
-    volumeRange.addEventListener('input', function(event){
-      var volumePercent = event.currentTarget.value
-      mediaPlayer.volume = volumePercent;
-    });
-  };
 
 /* MediaPlayer.js */
 class MediaPlayer {
@@ -178,18 +47,6 @@ class MediaPlayer {
     this.mutedVolume = 1;
     this.timers = {};
     this.setup();
-  }
-
-  get isHTML5() {
-    return this.host === hosts.html5;
-  }
-
-  get isYouTube() {
-    return this.host === hosts.youtube;
-  }
-
-  get isVimeo() {
-    return this.host === hosts.vimeo;
   }
 
   setup(){
@@ -283,6 +140,7 @@ class YoutubePlayer extends MediaPlayer {
     mediaPlayer.player = new window.YT.Player(mediaPlayer.id, {
       events: {
         onStateChange: function onStateChange(event){
+          var instance = event.target;
           mediaPlayer.syncState(event.data);
         },
         onReady: function onReady(event) {

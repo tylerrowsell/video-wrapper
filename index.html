@@ -1,15 +1,33 @@
 <head>
   <title>Video Wrapper</title>
-  <script src="index.js"></script>
+  <script src="src/index.js"></script>
+  <script src="src/media.js"></script>
   <link href="index.css" rel="stylesheet" type="text/css">
 </head>
 <body>
   <video playsinline="true" poster="https://cdn.shopify.com/s/files/1/0060/8747/5222/products/02f28406eafb4f6ab6b407ffa27d18d6_500x.jpg?v=1560361061">
-    <source src="https://videos.shopifycdn.com/c/vp/0a9b1f6c37de4534afb054342774f2ee/SD-480p.mp4?Expires=1564169503&KeyName=core-signing-key-1&Signature=QldkDvk5u1aTA3JrsSy0kC915Cs=" type="video/mp4">
+    <source src="https://videos.shopifycdn.com/c/vp/0a9b1f6c37de4534afb054342774f2ee/HD-720p.mp4?Expires=1564750498&amp;KeyName=core-signing-key-1&amp;Signature=DDlT7OZfHLNgEd7oDASVawiR6sY=" type="video/mp4">
     
     Your browser does not support the video tag.
   </video>
-  <iframe frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="allowfullscreen" src="https://www.youtube.com/embed/neFK-pv2sKY?controls=0&disablekb=1&enablejsapi=1&modestbranding=1&showinfo=0&playsinline=1&rel=0"></iframe>
+  <iframe frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="allowfullscreen" src="https://www.youtube.com/embed/neFK-pv2sKY?controls=0&disablekb=1&enablejsapi=1&modestbranding=1&showinfo=0&playsinline=1&rel=0&iv_load_policy=3"></iframe>
 
   <iframe src="https://player.vimeo.com/video/76979871?loop=false&byline=false&portrait=false&title=false&speed=true&transparent=0&gesture=media&controls=false&texttrack=false" allowfullscreen="" allowtransparency="" allow="autoplay"></iframe>
+
+  <div id="media-controls" class="controls" style="display: none;">
+    <button type="button" class="play-pause" data-media-player="play" aria-label="Play {title}">
+      <span class="icon--pressed" focusable="false"><img src="icon-pause.svg"/></span>
+      <span class="icon--not-pressed" focusable="false"><img src="icon-play.svg"/></span>
+    </button>
+    <div class="seek-wrapper">
+      <input data-media-player="seek" type="range" min="0" max="100" step="0.01" value="0" autocomplete="off" role="slider" aria-label="Seek" style="--value:0%;">
+    </div>
+    <button type="button" class="mute" data-media-player="mute">
+      <span class="icon--pressed" focusable="false"><img src="icon-mute.svg"/></span>
+      <span class="icon--not-pressed" focusable="false"><img src="icon-unmute.svg"/></span>
+    </button>
+    <div class="volume-wrapper">
+      <input data-media-player="volume" type="range" min="0" max="1" step="0.05" value="1" autocomplete="off" role="slider" aria-label="Volume" style="--value:100%;">
+    </div>
+  </div>
 </body>
